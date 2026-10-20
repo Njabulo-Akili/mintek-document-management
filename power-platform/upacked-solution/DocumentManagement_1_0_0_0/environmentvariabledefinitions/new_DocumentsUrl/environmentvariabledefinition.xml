@@ -1,0 +1,16 @@
+<environmentvariabledefinition schemaname="new_DocumentsUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>94e7c14e-8fc8-4d92-8420-bf06d3e7d2d6</defaultvalue>
+  <displayname default="DocumentsUrl">
+    <label description="DocumentsUrl" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.1</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>new_ReportsSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

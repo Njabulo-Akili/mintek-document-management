@@ -1,0 +1,16 @@
+<environmentvariabledefinition schemaname="new_DocumentNumbersListID">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>0caaf708-bb3f-435c-8264-ca1cfa36fafe</defaultvalue>
+  <displayname default="DocumentNumbersListID">
+    <label description="DocumentNumbersListID" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.1</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>new_ReportsSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

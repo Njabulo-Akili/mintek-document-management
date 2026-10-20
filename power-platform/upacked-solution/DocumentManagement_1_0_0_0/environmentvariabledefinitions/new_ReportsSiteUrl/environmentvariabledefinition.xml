@@ -1,0 +1,16 @@
+<environmentvariabledefinition schemaname="new_ReportsSiteUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>https://mintekcoza.sharepoint.com/sites/divisionsdev/reports</defaultvalue>
+  <description default="All actions using Reports dataset across all workflow files">
+    <label description="All actions using Reports dataset across all workflow files" languagecode="1033" />
+  </description>
+  <displayname default="ReportsSiteUrl">
+    <label description="ReportsSiteUrl" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.1</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>dataset</parameterkey>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

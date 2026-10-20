@@ -1,0 +1,16 @@
+<environmentvariabledefinition schemaname="mintek_DocumentManagementSiteUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>https://mintekcoza.sharepoint.com/sites/divisionsdev/Docs</defaultvalue>
+  <description default="Site url for document management">
+    <label description="Site url for document management" languagecode="1033" />
+  </description>
+  <displayname default="DocumentManagementSiteUrl">
+    <label description="DocumentManagementSiteUrl" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>dataset</parameterkey>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

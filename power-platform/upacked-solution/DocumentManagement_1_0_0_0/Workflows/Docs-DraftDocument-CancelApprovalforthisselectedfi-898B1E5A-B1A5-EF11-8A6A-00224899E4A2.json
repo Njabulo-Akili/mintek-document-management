@@ -1,0 +1,398 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_acff9"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_sharepointonline": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_30a22"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_sharepointonline-2": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_acff9"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_9d1c8"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)": {
+          "defaultValue": "d5560ea3-1590-41fa-bb3a-bde125e95f27",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementTaskTrackerUrl",
+            "description": "Link to task tracker"
+          }
+        },
+        "DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)": {
+          "defaultValue": "https://mintekcoza.sharepoint.com/sites/divisionsdev/Docs",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementSiteUrl",
+            "description": "Site url for document management"
+          }
+        },
+        "Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)": {
+          "defaultValue": "051877cf-dd1b-44cb-961e-7a3da681c5cd",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementDraftDocumentsUrl",
+            "description": "Link to Draft documents Library"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "splitOn": "@triggerBody()['rows']",
+          "metadata": {
+            "operationMetadataId": "fa929d8b-d220-4c5e-8a49-b5749f990939"
+          },
+          "type": "Request",
+          "kind": "ApiConnection",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "title": "Why is the Approval being Canceled?",
+                        "type": "string",
+                        "x-ms-dynamically-added": true,
+                        "description": "Please enter your input",
+                        "x-ms-content-hint": "TEXT"
+                      },
+                      "entity": {
+                        "type": "object",
+                        "properties": {
+                          "ID": {
+                            "title": "ID",
+                            "type": "integer",
+                            "format": "int64"
+                          }
+                        },
+                        "required": [
+                          "ID"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "entity"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "rows"
+              ]
+            },
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['shared_sharepointonline_1']['connectionId']"
+              }
+            },
+            "operationId": "ForASelectedFileHybridTrigger",
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')"
+            },
+            "headersSchema": {
+              "x-ms-user-email-encoded": {
+                "title": "User email",
+                "type": "string",
+                "format": "byte",
+                "x-ms-dynamically-added": false
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_file_properties_-_Document": {
+          "runAfter": {
+            "Initialize_variable_-_TaskID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8d91988e-8c78-49a9-99d9-9eedc5b5fe01"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetFileItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+              "id": "@triggerBody()?['entity']?['ID']"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Get_items_-_Task_Tracker": {
+          "runAfter": {
+            "Get_file_properties_-_Document": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "037824ac-4aa3-4fe1-94fd-e08fb2e044d1"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')",
+              "$filter": "Document/Id eq @{triggerBody()?['entity']?['ID']} and Process eq 'Approval' and Progress eq 'In Progress'",
+              "$orderby": "ID desc"
+            },
+            "authentication": {
+              "type": "Raw",
+              "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+            }
+          }
+        },
+        "Initialize_variable_-_TaskID": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "03c717cd-db3b-4200-a0bb-226c062a79b5"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "TaskID",
+                "type": "integer"
+              }
+            ]
+          }
+        },
+        "Compose": {
+          "runAfter": {
+            "Get_items_-_Task_Tracker": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "536bf56a-acd9-43d2-990e-e1505f2006a9"
+          },
+          "type": "Compose",
+          "inputs": "@length(outputs('Get_items_-_Task_Tracker')?['body/value'])"
+        },
+        "Condition_-_Check_is_Approval_Tasks_exist_in_the_Task_Tracker_for_this_Document": {
+          "actions": {
+            "Apply_to_each": {
+              "foreach": "@outputs('Get_items_-_Task_Tracker')?['body/value']",
+              "actions": {
+                "Update_item_-_Task_Tracker": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "4458b22c-2c5e-416c-ab15-9a54d4dd393a"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline-2",
+                      "operationId": "PatchItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                      "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')",
+                      "id": "@items('Apply_to_each')?['ID']",
+                      "item/Title": "@items('Apply_to_each')?['Title']",
+                      "item/Progress/Value": "Cancelled",
+                      "item/DueDate": "@utcNow()",
+                      "item/Notes": "Approval Canceled by @{triggerOutputs()['headers']['x-ms-user-email-encoded']} at @{formatDateTime(triggerOutputs()['headers']['x-ms-user-timestamp'], 'yyyy/MM/dd HH:mm')}.",
+                      "item/Completed": true,
+                      "item/SystemNotes": "Document Approval Canceled. \nDocs - Draft Document - Cancel Approval for this selected file"
+                    },
+                    "authentication": {
+                      "type": "Raw",
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                    }
+                  }
+                }
+              },
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "b8ae09d1-3704-4b16-a1ed-083ec9b2829b"
+              },
+              "type": "Foreach"
+            },
+            "Apply_to_each_2": {
+              "foreach": "@outputs('Get_file_properties_-_Document')?['body/Restricted_x0020_To']",
+              "actions": {
+                "Update_file_properties_-_Draft_Document": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "f01c282b-88a5-4a18-bcfe-4d8ec1ac8bc3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline_1",
+                      "operationId": "PatchFileItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                      "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                      "id": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                      "item/Title": "@outputs('Get_file_properties_-_Document')?['body/Title']",
+                      "item/Divisions/Value": "@outputs('Get_file_properties_-_Document')?['body/Divisions/Value']",
+                      "item/Workflow_x0020_Status": "Approval Canceled by @{triggerOutputs()['headers']['x-ms-user-email-encoded']} at @{formatDateTime(triggerOutputs()['headers']['x-ms-user-timestamp'], 'yyyy/MM/dd HH:mm')}.",
+                      "item/Review_x0020_Period": "@outputs('Get_file_properties_-_Document')?['body/Review_x0020_Period']",
+                      "item/Restricted_x0020_To": [
+                        {
+                          "Claims": "@items('Apply_to_each_2')?['Claims']"
+                        }
+                      ],
+                      "item/SystemNotes": "Document Approval Canceled. \nNotification sent to Document Approver: @{outputs('Get_file_properties_-_Document')?['body/Approver/DisplayName']}. \nDocs - Draft Document - Cancel Approval for this selected file"
+                    },
+                    "authentication": {
+                      "type": "Raw",
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Apply_to_each": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "80dd1681-875a-439d-9900-f7b1f5609c7d"
+              },
+              "type": "Foreach"
+            },
+            "Send_an_email_(V2)_2": {
+              "runAfter": {
+                "Apply_to_each_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d9c0c4ec-cfbb-4272-b640-485bcd5aa6b8"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@outputs('Get_file_properties_-_Document')?['body/Approver/Email']",
+                  "emailMessage/Subject": "Cancellation if: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_NO']}",
+                  "emailMessage/Body": "<p>Dear Document Approver,<br>\n<br>\nThis is a notification to inform you that the document approval has been cancel. Please ignore any previous correspondence.<br>\n<br>\nDocument No.: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_NO']}<br>\nDocument Title: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Title']}<br>\nDocument Owner: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/DisplayName']}<br>\n<br>\nWhy is the Approval being Canceled?<br>\n@{triggerBody()['text']}</p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Send_an_email_(V2)": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "c600ee97-f720-431e-b9f4-2590ed089188"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/Email']",
+                    "emailMessage/Subject": "No Approval to Cancelled for Document: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_NO']}",
+                    "emailMessage/Body": "<p>Dear Document Owner,<br>\n<br>\nThere is no Approval to Cancel for the selected Document.</p>",
+                    "emailMessage/Importance": "Normal"
+                  },
+                  "authentication": {
+                    "type": "Raw",
+                    "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "greater": [
+              "@length(outputs('Get_items_-_Task_Tracker')?['body/value'])",
+              0
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "28667bd0-05c3-4eb4-aab6-33352cf0347e"
+          },
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

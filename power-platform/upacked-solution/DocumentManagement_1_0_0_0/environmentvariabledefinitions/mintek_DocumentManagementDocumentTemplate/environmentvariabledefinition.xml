@@ -1,0 +1,19 @@
+<environmentvariabledefinition schemaname="mintek_DocumentManagementDocumentTemplate">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>b!gl3zBCVQqkC9aIzMgkSwE-Lt_xcd3atPtC2MgfLdWteY-fiY69W9Sb3ekyJjLGQn</defaultvalue>
+  <description default="Link to Document Template Library">
+    <label description="Link to Document Template Library" languagecode="1033" />
+  </description>
+  <displayname default="Document Management - Document Template">
+    <label description="Document Management - Document Template" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>mintek_DocumentManagementSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

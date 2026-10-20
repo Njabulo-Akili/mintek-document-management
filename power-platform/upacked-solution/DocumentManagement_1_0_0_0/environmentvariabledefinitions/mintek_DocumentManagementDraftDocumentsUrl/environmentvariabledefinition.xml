@@ -1,0 +1,19 @@
+<environmentvariabledefinition schemaname="mintek_DocumentManagementDraftDocumentsUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>051877cf-dd1b-44cb-961e-7a3da681c5cd</defaultvalue>
+  <description default="Link to Draft documents Library">
+    <label description="Link to Draft documents Library" languagecode="1033" />
+  </description>
+  <displayname default="Document Management - Draft Documents Url">
+    <label description="Document Management - Draft Documents Url" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>mintek_DocumentManagementSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

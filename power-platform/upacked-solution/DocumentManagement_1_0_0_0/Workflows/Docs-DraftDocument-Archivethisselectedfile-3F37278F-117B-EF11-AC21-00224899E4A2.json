@@ -1,0 +1,254 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_acff9"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)": {
+          "defaultValue": "https://mintekcoza.sharepoint.com/sites/divisionsdev/Docs",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementSiteUrl",
+            "description": "Site url for document management"
+          }
+        },
+        "Document Management - Published Documents Url (mintek_DocumentManagementPublishedDocumentsUrl)": {
+          "defaultValue": "59389234-7198-4342-94fa-5c6efb12a5fc",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementPublishedDocumentsUrl",
+            "description": "Link to Published Documents"
+          }
+        },
+        "Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)": {
+          "defaultValue": "051877cf-dd1b-44cb-961e-7a3da681c5cd",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementDraftDocumentsUrl",
+            "description": "Link to Draft documents Library"
+          }
+        }
+      },
+      "triggers": {
+        "manual": {
+          "splitOn": "@triggerBody()['rows']",
+          "metadata": {
+            "operationMetadataId": "fa929d8b-d220-4c5e-8a49-b5749f990939"
+          },
+          "type": "Request",
+          "kind": "ApiConnection",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "boolean": {
+                        "title": "Are you sure? This will also removed the Published version of this document.",
+                        "type": "boolean",
+                        "x-ms-dynamically-added": true,
+                        "description": "Please select yes or no",
+                        "x-ms-content-hint": "BOOLEAN"
+                      },
+                      "entity": {
+                        "type": "object",
+                        "properties": {
+                          "ID": {
+                            "title": "ID",
+                            "type": "integer",
+                            "format": "int64"
+                          }
+                        },
+                        "required": [
+                          "ID"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "entity"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "rows"
+              ]
+            },
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['shared_sharepointonline']['connectionId']"
+              }
+            },
+            "operationId": "ForASelectedFileHybridTrigger",
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')"
+            }
+          }
+        }
+      },
+      "actions": {
+        "Condition": {
+          "actions": {
+            "Get_file_properties_-_Draft_Document": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "8d91988e-8c78-49a9-99d9-9eedc5b5fe01"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                  "id": "@triggerBody()?['entity']?['ID']"
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Move_file_-_Draft_Document": {
+              "runAfter": {
+                "Get_file_properties_-_Draft_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "27d50b0c-fdd3-4279-a2c3-a5a8a4ff26d2"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "MoveFileAsync",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "parameters/sourceFileId": "@outputs('Get_file_properties_-_Draft_Document')?['body/{Identifier}']",
+                  "parameters/destinationDataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "parameters/destinationFolderPath": "/ArchivedDocuments",
+                  "parameters/nameConflictBehavior": 2
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Get_files_(properties_only)_-_Published_Document": {
+              "runAfter": {
+                "Move_file_-_Draft_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d0316ffa-1e97-4d07-8757-fefd11ef749f"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "table": "@parameters('Document Management - Published Documents Url (mintek_DocumentManagementPublishedDocumentsUrl)')",
+                  "$filter": "FileLeafRef eq '@{outputs('Get_file_properties_-_Draft_Document')?['body/{Name}']}.pdf'",
+                  "$orderby": "ID desc",
+                  "$top": 1
+                },
+                "authentication": {
+                  "type": "Raw",
+                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                }
+              }
+            },
+            "Apply_to_each": {
+              "foreach": "@outputs('Get_files_(properties_only)_-_Published_Document')?['body/value']",
+              "actions": {
+                "Move_file_-_Published_Document": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "27d50b0c-fdd3-4279-a2c3-a5a8a4ff26d2"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "MoveFileAsync",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                      "parameters/sourceFileId": "@items('Apply_to_each')?['{Identifier}']",
+                      "parameters/destinationDataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                      "parameters/destinationFolderPath": "/ArchivedDocuments",
+                      "parameters/nameConflictBehavior": 2
+                    },
+                    "authentication": {
+                      "type": "Raw",
+                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_files_(properties_only)_-_Published_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "836f9a10-a62b-4860-b619-60c3b838e65b"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {},
+          "expression": {
+            "equals": [
+              "@triggerBody()['boolean']",
+              "@true"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "feaed340-f18b-41d8-b889-262406d5e616"
+          },
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

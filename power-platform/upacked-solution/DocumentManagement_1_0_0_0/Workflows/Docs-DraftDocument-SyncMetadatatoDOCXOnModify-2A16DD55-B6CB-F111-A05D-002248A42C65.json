@@ -1,0 +1,105 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_58c36"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)": {
+          "defaultValue": "https://mintekcoza.sharepoint.com/sites/divisionsdev/Docs",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementSiteUrl",
+            "description": "Site url for document management"
+          }
+        },
+        "Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)": {
+          "defaultValue": "051877cf-dd1b-44cb-961e-7a3da681c5cd",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementDraftDocumentsUrl",
+            "description": "Link to Draft documents Library"
+          }
+        }
+      },
+      "triggers": {
+        "When_a_file_is_created_or_modified_(properties_only)": {
+          "recurrence": {
+            "interval": 1,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "0f9536ef-00e4-4f1d-b71c-e9b7dfcf83f7"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetOnUpdatedFileItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "conditions": [
+            {
+              "expression": "@and(equals(triggerOutputs()?['body/{IsFolder}'], false), endsWith(toLower(triggerOutputs()?['body/{FilenameWithExtension}']), '.docx'))"
+            }
+          ],
+          "description": "Starts the sync when metadata changes.",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Get_file_properties": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "c02b4f2d-8d0b-4092-8680-0f88d6c04a8a"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+              "id": "@triggerOutputs()?['body/ID']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

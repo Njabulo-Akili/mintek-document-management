@@ -1,0 +1,332 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_approvals_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedapprovals_88329"
+        },
+        "api": {
+          "name": "shared_approvals"
+        }
+      },
+      "shared_sharepointonline": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_30a22"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_acff9"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)": {
+          "defaultValue": "d5560ea3-1590-41fa-bb3a-bde125e95f27",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementTaskTrackerUrl",
+            "description": "Link to task tracker"
+          }
+        },
+        "DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)": {
+          "defaultValue": "https://mintekcoza.sharepoint.com/sites/divisionsdev/Docs",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementSiteUrl",
+            "description": "Site url for document management"
+          }
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created": {
+          "recurrence": {
+            "interval": 1,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "c0bb498f-768c-4a2c-ad2e-7dd8b7734be4"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetOnNewItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "conditions": []
+        }
+      },
+      "actions": {
+        "Start_and_wait_for_an_approval": {
+          "runAfter": {
+            "Compose_-_Approver(s)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "46528672-9810-447f-a4e1-6ff3304f74af"
+          },
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_approvals_1",
+              "operationId": "StartAndWaitForAnApproval",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_approvals"
+            },
+            "parameters": {
+              "approvalType": "Basic",
+              "WebhookApprovalCreationInput/title": "@triggerOutputs()?['body/Title']",
+              "WebhookApprovalCreationInput/assignedTo": "@{variables('Approver')};",
+              "WebhookApprovalCreationInput/details": "@triggerOutputs()?['body/Description']",
+              "WebhookApprovalCreationInput/itemLink": "@triggerOutputs()?['body/Link']",
+              "WebhookApprovalCreationInput/itemLinkDescription": "Link to the Document",
+              "WebhookApprovalCreationInput/enableNotifications": true,
+              "WebhookApprovalCreationInput/enableReassignment": true
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Initialize_variable_-_ApprovalStatus": {
+          "runAfter": {
+            "Initialize_variable_-_Approver": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "bed99944-9548-40ca-8e1a-380ddd6e147d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ApprovalStatus",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Approver": {
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7f8044b-c274-4de5-83d0-952bb393565d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Approver",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Apply_to_each_2": {
+          "foreach": "@triggerOutputs()?['body/AssignedTo0']",
+          "actions": {
+            "Append_to_string_variable_-_Approvers": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "80cfd603-48eb-4d27-9805-1244a3bcb829"
+              },
+              "type": "AppendToStringVariable",
+              "inputs": {
+                "name": "Approver",
+                "value": "@{items('Apply_to_each_2')?['Email']};"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_-_ApprovalStatus": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f20f9066-6e80-44eb-82c5-23fc4e474acb"
+          },
+          "type": "Foreach"
+        },
+        "Compose_-_Approver(s)": {
+          "runAfter": {
+            "Apply_to_each_2": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "589f2d68-57b8-40da-9a41-b74d418d4515"
+          },
+          "type": "Compose",
+          "inputs": "@variables('Approver')"
+        },
+        "Compose": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "58731328-0e9c-4739-bc55-865bc7b3647a"
+          },
+          "type": "Compose",
+          "inputs": "Process: @{triggerOutputs()?['body/Process']}\nProcess = Approval: @{equals(triggerOutputs()?['body/Process'], 'Approval')}"
+        },
+        "Get_item_-_Task_Tracker": {
+          "runAfter": {
+            "Start_and_wait_for_an_approval": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fe8322f2-4462-48b1-b4ed-4478a1061849"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')",
+              "id": "@triggerOutputs()?['body/ID']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Condition_-_Check_if_Progress_is_Cancelled": {
+          "actions": {},
+          "runAfter": {
+            "Get_item_-_Task_Tracker": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Condition_-_Check_Response_Outcome": {
+                "actions": {
+                  "Set_variable_-_ApprovalStatus": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "1c67af6d-5937-4357-a8b9-7baa1f67cc99"
+                    },
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "ApprovalStatus",
+                      "value": "Approved"
+                    }
+                  }
+                },
+                "runAfter": {},
+                "else": {
+                  "actions": {
+                    "Set_variable_-_ApprovalStatus_2": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "d4d3b886-ec4c-42d2-930a-789e7910eee8"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "ApprovalStatus",
+                        "value": "Rejected"
+                      }
+                    }
+                  }
+                },
+                "expression": {
+                  "equals": [
+                    "@outputs('Start_and_wait_for_an_approval')?['body/outcome']",
+                    "Approve"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "88e8ff45-4262-47c1-bdca-243e70bb6e61"
+                },
+                "type": "If"
+              },
+              "Apply_to_each": {
+                "foreach": "@outputs('Start_and_wait_for_an_approval')?['body/responses']",
+                "actions": {
+                  "Update_item_-_Task_Tracker": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "a3713826-9187-4a11-9f3a-c77b97a1e879"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline_1",
+                        "operationId": "PatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                        "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')",
+                        "id": "@triggerOutputs()?['body/ID']",
+                        "item/Title": "@triggerOutputs()?['body/Title']",
+                        "item/Progress/Value": "@variables('ApprovalStatus')",
+                        "item/ResponseFrom/Claims": "@items('Apply_to_each')?['responder/email']",
+                        "item/Notes": "@items('Apply_to_each')?['comments']",
+                        "item/SystemNotes": "Approval Email returned. \nStatus Updated.\nPower Automate Workflow: Docs - Task Tracker - New Approval Request"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Condition_-_Check_Response_Outcome": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "b5bceb7f-e220-4859-a629-86e76a72bd51"
+                },
+                "type": "Foreach"
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@outputs('Get_item_-_Task_Tracker')?['body/Progress/Value']",
+              "Cancelled"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fe4346bc-cf3d-46c5-9ad5-30a03758bd3d"
+          },
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

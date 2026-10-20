@@ -1,0 +1,16 @@
+<environmentvariabledefinition schemaname="mintek_DivisionsSiteUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>https://mintekcoza.sharepoint.com/sites/divisionsdev</defaultvalue>
+  <description default="Link to Divisions site">
+    <label description="Link to Divisions site" languagecode="1033" />
+  </description>
+  <displayname default="DivisionsSiteUrl">
+    <label description="DivisionsSiteUrl" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.5</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>dataset</parameterkey>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

@@ -1,0 +1,18 @@
+<environmentvariabledefinition schemaname="new_AutomatedPagesUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <description default="Automated Pages Library in Reports site">
+    <label description="Automated Pages Library in Reports site" languagecode="1033" />
+  </description>
+  <displayname default="AutomatedPagesUrl">
+    <label description="AutomatedPagesUrl" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.1</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>new_ReportsSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

@@ -1,0 +1,1890 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_2": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_30a22"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedoffice365_a47d4"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_acff9"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_conversionservice": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedconversionservice_7cea2"
+        },
+        "api": {
+          "name": "shared_conversionservice"
+        }
+      },
+      "shared_sharepointonline": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_acff9"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)": {
+          "defaultValue": "d5560ea3-1590-41fa-bb3a-bde125e95f27",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementTaskTrackerUrl",
+            "description": "Link to task tracker"
+          }
+        },
+        "DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)": {
+          "defaultValue": "https://mintekcoza.sharepoint.com/sites/divisionsdev/Docs",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementSiteUrl",
+            "description": "Site url for document management"
+          }
+        },
+        "Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)": {
+          "defaultValue": "051877cf-dd1b-44cb-961e-7a3da681c5cd",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementDraftDocumentsUrl",
+            "description": "Link to Draft documents Library"
+          }
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "schedule": {
+              "hours": [
+                "8"
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "981f8ad0-d070-4622-b242-0a8df40c703b"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Get_files_(properties_only)_-_Draft_Document": {
+          "runAfter": {
+            "Compose_-_Filter_Query": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3920c177-57a3-4689-8bf9-0f94b0ff2a48"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_2",
+              "operationId": "GetFileItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+              "$orderby": "ID desc",
+              "$top": 5000
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Get_future_time": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "ff3275ea-a1d1-4d0c-849d-72d2d68be8d5"
+          },
+          "type": "Expression",
+          "kind": "GetFutureTime",
+          "inputs": {
+            "interval": 1,
+            "timeUnit": "Month"
+          }
+        },
+        "Compose_-_Filter_Query": {
+          "runAfter": {
+            "Get_future_time": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "211d7160-ecb6-49a1-9bfd-46a0d31d9e0c"
+          },
+          "type": "Compose",
+          "inputs": "@{formatDateTime(addDays(body('Get_future_time'), -1), 'yyyy-MM-dd')}T22:00:00Z"
+        },
+        "Select_-_All_Draft_Document": {
+          "runAfter": {
+            "Get_files_(properties_only)_-_Draft_Document": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "93f5571e-56ae-4880-b233-8bf78b3fc2de"
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Get_files_(properties_only)_-_Draft_Document')?['body/value']",
+            "select": {
+              "DocID": "@item()?['ID']",
+              "NextReviewDate": "@item()?['Review_x0020_Date']"
+            }
+          }
+        },
+        "Filter_array_-_Draft_Document_for_Review_Today": {
+          "runAfter": {
+            "Select_-_All_Draft_Document": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a21db44d-9281-45f1-947d-ab1c177bcec6"
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Select_-_All_Draft_Document')",
+            "where": "@equals(outputs('Compose_-_Filter_Query'), item()?['NextReviewDate'])"
+          }
+        },
+        "Apply_to_each_-_Draft_Document_for_Review_Today": {
+          "foreach": "@body('Filter_array_-_Draft_Document_for_Review_Today')",
+          "actions": {
+            "Scope_-_Reset_Variables": {
+              "actions": {
+                "Set_variable_-_ReviewersEmail_=_Null": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "ed95df3d-8f88-4011-84a3-5dd4950d9956"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "ReviewersEmail",
+                    "value": "@{null}"
+                  }
+                },
+                "Set_variable_-_ReviewersNames_=_Null": {
+                  "runAfter": {
+                    "Set_variable_-_ReviewersEmail_=_Null": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "462bbd83-c6e2-4084-bf8b-ec0948f41dc8"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "ReviewersNames",
+                    "value": "@{null}"
+                  }
+                },
+                "Set_variable__-_arrReviewersEmail__=_Null": {
+                  "runAfter": {
+                    "Set_variable_-_ReviewersNames_=_Null": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "98f55b30-7dc0-4d52-ae69-62ed0f338453"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "arrReviewersEmail",
+                    "value": []
+                  }
+                },
+                "Set_variable_-_Reviewers_-_Null": {
+                  "runAfter": {
+                    "Set_variable__-_arrReviewersEmail__=_Null": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "c5767daa-8011-451a-930c-ab7e3fc0ab94"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "Reviewers",
+                    "value": "@{null}"
+                  }
+                },
+                "Set_variable_-_TaskMessage_=_Null": {
+                  "runAfter": {
+                    "Set_variable_-_Reviewers_-_Null": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "7b3eacd1-fe43-4155-8c58-1f8a401a3f60"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "TaskMessage",
+                    "value": "@{null}"
+                  }
+                },
+                "Set_variable_-_ReviewerComment_on_Document_=_Null": {
+                  "runAfter": {
+                    "Set_variable_-_TaskMessage_=_Null": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "209b38f0-b81c-4167-9448-968f0aa4b5a7"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "ReviewersComments on Document",
+                    "value": "@{null}"
+                  }
+                },
+                "Set_variable_-_ReviewerComments_=_Null": {
+                  "runAfter": {
+                    "Set_variable_-_ReviewerComment_on_Document_=_Null": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "76ff5ed3-b4b3-4789-b610-a4695c2e2324"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "ReviewersComments",
+                    "value": "@{null}"
+                  }
+                }
+              },
+              "runAfter": {
+                "Scope": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c005020c-970c-4f27-8c5f-86294a6b94db"
+              },
+              "type": "Scope"
+            },
+            "Scope": {
+              "actions": {
+                "Condition_-_Check_if_there_are_Reviewers": {
+                  "actions": {
+                    "Send_an_email_(V2)_-_Document_Owners_Start": {
+                      "runAfter": {
+                        "Set_variable_-_Reviewers_2": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "c600ee97-f720-431e-b9f4-2590ed089188"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365_1",
+                          "operationId": "SendEmailV2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "emailMessage/To": "@outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/Email']",
+                          "emailMessage/Subject": "Review Document: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Number']}",
+                          "emailMessage/Body": "<style>\n.workflow-footer {\n    font-size: 12px;\n}\n</style>\n<p>Dear Document Owners,</p>\n<p>This is a notification to inform you that a document requires a review. The document will expire in one month.</p>\n<p>The Reviewers will be sent a Review approval task, this will allow them to comment on any changes, if needed. After 7 days (or as soon as all the responses are collected), another Approval task will be sent to you, the Document Owner, to do the Final Review.</p>\n<p>\nDocument No.: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Number']}<br>\nDocument Title: @{outputs('Get_file_properties_-_Document')?['body/Project_x0020_Title']}<br>\nDocument Owner: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/DisplayName']}<br>\nReviewers: @{variables('Reviewers')}<br>\n</p>\n<br>\n<p class=\"workflow-footer\">\n    Power Automate Workflow: Docs - Draft Document - Request Review for this selected file\n</p>",
+                          "emailMessage/Importance": "Normal"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Update_file_properties_-_Draft_Document_Starting_2": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "f01c282b-88a5-4a18-bcfe-4d8ec1ac8bc3"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline_1",
+                          "operationId": "PatchFileItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                          "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                          "id": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                          "item/Title": "@outputs('Get_file_properties_-_Document')?['body/Project_x0020_Title']",
+                          "item/Divisions/Value": "@outputs('Get_file_properties_-_Document')?['body/Divisions/Value']",
+                          "item/Workflow_x0020_Status": "Waiting for @{variables('Reviewers')} to Review the @{outputs('Get_file_properties_-_Document')?['body/{ContentType}/Name']} Document.",
+                          "item/Review_x0020_Period": "@outputs('Get_file_properties_-_Document')?['body/Review_x0020_Period']",
+                          "item/SystemNotes": "Manual Review Request Starting at @{formatDateTime(addHours(utcNow(), 2), 'yyyy-MM-dd HH:mm')}.\nPower Automate Workflow: Docs - Draft Document - Request Review for this selected file"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Set_variable_-_Reviewers_2": {
+                      "runAfter": {
+                        "Update_file_properties_-_Draft_Document_Starting_2": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "f423ade4-dbc5-44b2-8f4c-2dea8eda555c"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "Reviewers",
+                        "value": "@{join(variables('ReviewersNames'), ', ')}"
+                      }
+                    },
+                    "Compose_-_arrayReviwersEmail": {
+                      "runAfter": {
+                        "Send_an_email_(V2)_-_Document_Owners_Start": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "78bd3fc6-fbb6-49fe-81b7-99cbce1f078a"
+                      },
+                      "type": "Compose",
+                      "inputs": "@variables('arrReviewersEmail')"
+                    },
+                    "Scope_-_Review": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[0]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments": {
+                                  "runAfter": {
+                                    "Compose_-_Skip": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "f93c0aea-9712-431b-8605-bc7a06d1d0e8"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              1
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Compose_-_arrReviewersEmail_Length": {
+                      "runAfter": {
+                        "Compose_-_arrayReviwersEmail": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "85985f1b-1c82-475e-808a-966ed17a12d9"
+                      },
+                      "type": "Compose",
+                      "inputs": "@length(variables('arrReviewersEmail'))"
+                    },
+                    "Scope_-_Review_2": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_2": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_2": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[1]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_2": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_2": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_2')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_2": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_2": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_2": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_2": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "355a7445-5522-45c0-8ae0-cd11ee7d0a83"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_2')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_2": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_2'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              2
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_3": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_3": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_3": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[2]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_3": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_3": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_3')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_3": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_3": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_3": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_3": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "f5674d77-dd58-46da-a853-a61bdf813ca0"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_3')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_3": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_3'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              3
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_4": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_4": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_4": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[3]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_4": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_4": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_4')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_4": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_4": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_4": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_4": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "7d6f850f-989a-45a7-8ae8-7c21cfae59a9"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_4')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_4": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_4'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              4
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_5": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_5": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_5": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[4]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_5": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_5": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_5')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_5": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_5": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_5": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_5": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "640bbd65-3248-4299-93aa-15d4e210a711"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_5')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_5": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_5'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              5
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_6": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_6": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_6": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[5]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_6": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_6": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_6')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_6": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_6": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_6": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_6": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "42948243-c89e-4fde-a30d-bf4e04e35eff"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_6')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_6": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_6'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              6
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_7": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_7": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_7": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[6]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_7": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_7": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_7')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_7": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_7": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_7": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_7": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "e7391953-b0fc-4356-99d6-c142939ca1ca"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_7')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_7": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_7'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              7
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_8": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_8": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_8": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[7]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_8": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_8": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_8')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_8": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_8": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_8": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_8": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "9c6f35aa-c9f3-4fd0-a925-336ca0692190"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_8')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_8": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_8'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              8
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_9": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_9": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_9": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[8]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_9": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_9": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_9')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_9": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_9": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_9": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_9": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "3b17b134-6c0b-4f47-8128-c9bc3f9e7020"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_9')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_9": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_9'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              9
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Scope_-_Review_10": {
+                      "actions": {
+                        "Condition_-_Check_if_arrReviwersEmail_10": {
+                          "actions": {
+                            "Compose_-_arrReviewersEmail_10": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "3c6daaea-dc45-4b1b-8a1f-680e26d832a4"
+                              },
+                              "type": "Compose",
+                              "inputs": "@variables('arrReviewersEmail')[9]"
+                            },
+                            "Condition_-_Check_arrReviewersEmail_10": {
+                              "actions": {
+                                "Run_a_Child_Flow_-_Request_Review_10": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "7d39d0d4-2b0f-4d83-a38d-4f1c98017ff9"
+                                  },
+                                  "type": "Workflow",
+                                  "inputs": {
+                                    "host": {
+                                      "workflowReferenceName": "3ddd3b10-4da7-ef11-b8e9-00224899e4a2"
+                                    },
+                                    "body": {
+                                      "number": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                                      "email": "@outputs('Compose_-_arrReviewersEmail_10')"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    }
+                                  }
+                                },
+                                "Compose_-_Skip_10": {
+                                  "runAfter": {
+                                    "Run_a_Child_Flow_-_Request_Review_10": [
+                                      "TimedOut",
+                                      "Failed"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "64576c0e-ed98-4f0e-99e8-b1969bb2a9bc"
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "Skip"
+                                },
+                                "Append_to_string_variable_-_ReviewerComments_10": {
+                                  "runAfter": {
+                                    "Compose_-_Skip_10": [
+                                      "Skipped"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "1a6d0820-0127-49b1-8290-3e931be3ba07"
+                                  },
+                                  "type": "AppendToStringVariable",
+                                  "inputs": {
+                                    "name": "ReviewersComments",
+                                    "value": "@body('Run_a_Child_Flow_-_Request_Review_10')?['response']"
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "Compose_-_arrReviewersEmail_10": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "not": {
+                                  "equals": [
+                                    "@empty(outputs('Compose_-_arrReviewersEmail_10'))",
+                                    "@true"
+                                  ]
+                                }
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7e10fa72-a12e-4597-9f2f-64d205b3873e"
+                              },
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": {
+                            "greaterOrEquals": [
+                              "@outputs('Compose_-_arrReviewersEmail_Length')",
+                              10
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "d3812e05-b9c9-4dc6-811f-8ec163797a6e"
+                          },
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Compose_-_arrReviewersEmail_Length": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fbf7e1f2-dc00-442d-9f19-01fe48f46c71"
+                      },
+                      "type": "Scope"
+                    },
+                    "Set_variable_-_TaskMassage": {
+                      "runAfter": {
+                        "Html_to_text": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "11001778-8e79-4761-952c-38f552a35ecd"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "TaskMessage",
+                        "value": "Dear Document Owner, \n\nThis is a notification to inform you that a document Review process has been completed, or the 7 Days review period has expired.\n\nPlease review the document at your earliest convenience to ensure that any necessary updates or actions are completed. \n\nDocument No.: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Number']}\nDocument Title: @{outputs('Get_file_properties_-_Document')?['body/Project_x0020_Title']}\nDocument Owner: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/DisplayName']}\nReviewers: @{variables('Reviewers')}\n\nReviewers Responses (within the 7 days): \n@{if(empty(body('Html_to_text')),'None',body('Html_to_text'))}"
+                      }
+                    },
+                    "Html_to_text": {
+                      "runAfter": {
+                        "Scope_-_Review": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_10": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_2": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_3": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_4": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_5": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_6": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_7": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_8": [
+                          "Succeeded"
+                        ],
+                        "Scope_-_Review_9": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "d481fa4d-3c02-4ccc-87f1-df1eb74a7c6c"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_conversionservice",
+                          "operationId": "HtmlToText",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_conversionservice"
+                        },
+                        "parameters": {
+                          "Content": "<p>@{variables('ReviewersComments')}</p>"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {},
+                  "else": {
+                    "actions": {
+                      "Set_variable_-_TaskMassage_2": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "3ed83584-8ced-4f76-acfd-3b9aef2370d3"
+                        },
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "TaskMessage",
+                          "value": "Dear Document Owner,\n\nThis is a notification to inform you that a document requires a review. The document will expire in one month.\n\nPlease review the document at your earliest convenience to ensure that any necessary updates or actions are completed. \n\nDocument No.: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Number']}\nDocument Title: @{outputs('Get_file_properties_-_Document')?['body/Project_x0020_Title']}\nDocument Owner: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/DisplayName']}\n\nReviewers: There are no Reviewers listed.\n"
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "greater": [
+                      "@length(outputs('Get_file_properties_-_Document')?['body/Reviewers'])",
+                      0
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "4dbeea47-ab78-407a-a073-559987170243"
+                  },
+                  "type": "If"
+                },
+                "Create_item_-_Task_Tracker": {
+                  "runAfter": {
+                    "Condition_-_Check_if_there_are_Reviewers": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "07d8758a-728d-4abc-b696-4b2f285e946c"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                      "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')",
+                      "item/Title": "Final Review needed for Document @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Number']}",
+                      "item/Progress/Value": "In Progress",
+                      "item/StartDate": "@utcNow()",
+                      "item/AssignedTo0": [
+                        {
+                          "Claims": "@outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/Claims']"
+                        }
+                      ],
+                      "item/Completed": false,
+                      "item/Link": "@outputs('Get_file_properties_-_Document')?['body/{Link}']",
+                      "item/Process": "Review",
+                      "item/Description": "@variables('TaskMessage')",
+                      "item/SystemNotes": "Power Automate Workflow: Docs - Draft Document - Request Review for this selected file"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Update_file_properties_-_Draft_Document": {
+                  "runAfter": {
+                    "Create_item_-_Task_Tracker": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "f01c282b-88a5-4a18-bcfe-4d8ec1ac8bc3"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "PatchFileItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                      "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                      "id": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                      "item/Workflow_x0020_Status": "Waiting for @{outputs('Update_file_properties_-_Draft_Document_Starting')?['body/Document_x0020_Owner/DisplayName']} to do the Final Review.",
+                      "item/Review_x0020_Period": "@outputs('Get_file_properties_-_Document')?['body/Review_x0020_Period']",
+                      "item/Approver_x0020_Comments": "Reviewers Responses: @{variables('ReviewersComments on Document')}",
+                      "item/SystemNotes": "Review Completed at @{formatDateTime(addHours(utcNow(), 2), 'yyyy-MM-dd HH:mm')}. \nPower Automate Workflow: Docs - Draft Document - Request Review for this selected file"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Update_file_properties_-_Draft_Document_Starting": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "74dc8a44-3264-4635-8440-f2824998eae1"
+              },
+              "type": "Scope"
+            },
+            "Get_file_properties_-_Document": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "8d91988e-8c78-49a9-99d9-9eedc5b5fe01"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                  "id": "@items('Apply_to_each_-_Draft_Document_for_Review_Today')?['DocID']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Apply_to_each": {
+              "foreach": "@outputs('Get_file_properties_-_Document')?['body/Reviewers']",
+              "actions": {
+                "Append_to_string_variable_-_ReviewersEmail": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "ce175a41-9e04-4371-8182-64d8707bb5e5"
+                  },
+                  "type": "AppendToStringVariable",
+                  "inputs": {
+                    "name": "ReviewersEmail",
+                    "value": "@{items('Apply_to_each')?['Email']}; "
+                  }
+                },
+                "Append_to_array_variable_-_ReviewersNames": {
+                  "runAfter": {
+                    "Append_to_string_variable_-_ReviewersEmail": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e910bc43-28e8-49ac-9538-32aced782342"
+                  },
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "ReviewersNames",
+                    "value": "@items('Apply_to_each')?['DisplayName']"
+                  }
+                },
+                "Append_to_array_variable_-_arrReviewersEmail": {
+                  "runAfter": {
+                    "Append_to_array_variable_-_ReviewersNames": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "e910bc43-28e8-49ac-9538-32aced782342"
+                  },
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "arrReviewersEmail",
+                    "value": "@items('Apply_to_each')?['Email']"
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_file_properties_-_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b8ae09d1-3704-4b16-a1ed-083ec9b2829b"
+              },
+              "type": "Foreach"
+            },
+            "Compose_-_Reviewers": {
+              "runAfter": {
+                "Apply_to_each": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "44a16f88-6841-408a-981c-7edd0a275873"
+              },
+              "type": "Compose",
+              "inputs": "Length of Reviewers: @{length(outputs('Get_file_properties_-_Document')?['body/Reviewers'])}"
+            },
+            "Update_file_properties_-_Draft_Document_Starting": {
+              "runAfter": {
+                "Compose_-_Reviewers": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f01c282b-88a5-4a18-bcfe-4d8ec1ac8bc3"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PatchFileItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                  "id": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                  "item/Title": "@outputs('Get_file_properties_-_Document')?['body/Project_x0020_Title']",
+                  "item/Divisions/Value": "@outputs('Get_file_properties_-_Document')?['body/Divisions/Value']",
+                  "item/Workflow_x0020_Status": "Waiting for @{variables('Reviewers')} to Review the @{outputs('Get_file_properties_-_Document')?['body/{ContentType}/Name']} Document.",
+                  "item/Review_x0020_Period": "@outputs('Get_file_properties_-_Document')?['body/Review_x0020_Period']",
+                  "item/SystemNotes": "Review Process Starting: I Month before Review Date. \nRevision No: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Revision_x0020_No_x002e_']} at @{formatDateTime(addHours(utcNow(), 2), 'yyyy-MM-dd HH:mm')}.\nPower Automate Workflow: Docs - Draft Document - Request Review for this selected file"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Terminate": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "6d144b59-fae6-4a8c-b732-fe81c8a14e5b"
+          },
+          "type": "Foreach",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 50
+            }
+          }
+        },
+        "Initialize_variable_-_ReviewersEmail": {
+          "runAfter": {
+            "Filter_array_-_Draft_Document_for_Review_Today": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7f8044b-c274-4de5-83d0-952bb393565d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ReviewersEmail",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_arrReviewersEmail": {
+          "runAfter": {
+            "Initialize_variable_-_ReviewersEmail": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7f8044b-c274-4de5-83d0-952bb393565d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arrReviewersEmail",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_ReviewersNames": {
+          "runAfter": {
+            "Initialize_variable_-_arrReviewersEmail": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7f8044b-c274-4de5-83d0-952bb393565d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ReviewersNames",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_ReviewersComments": {
+          "runAfter": {
+            "Initialize_variable_-_ReviewersNames": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "be44e00c-cd0e-4884-9fd1-38e85d6b9de0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ReviewersComments",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_ReviewersComments_on_Document": {
+          "runAfter": {
+            "Initialize_variable_-_ReviewersComments": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "be44e00c-cd0e-4884-9fd1-38e85d6b9de0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ReviewersComments on Document",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_TaskMessage": {
+          "runAfter": {
+            "Initialize_variable_-_ReviewersComments_on_Document": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "be44e00c-cd0e-4884-9fd1-38e85d6b9de0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "TaskMessage",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_Reviewers": {
+          "runAfter": {
+            "Initialize_variable_-_TaskMessage": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "be44e00c-cd0e-4884-9fd1-38e85d6b9de0"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Reviewers",
+                "type": "string",
+                "value": "Reviewers: None"
+              }
+            ]
+          }
+        },
+        "Terminate": {
+          "runAfter": {
+            "Initialize_variable_-_Reviewers": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e3e21a1f-60cd-43dd-b945-b158303b69be"
+          },
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Failed"
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

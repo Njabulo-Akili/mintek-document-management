@@ -1,0 +1,1223 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline-2": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedsharepointonline_acff9"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_wordonlinebusiness-1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedwordonlinebusiness_0f5f3"
+        },
+        "api": {
+          "name": "shared_wordonlinebusiness"
+        }
+      },
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "mintek_sharedoffice365_a47d4"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "Document Management - Published Documents Url (mintek_DocumentManagementPublishedDocumentsUrl)": {
+          "defaultValue": "59389234-7198-4342-94fa-5c6efb12a5fc",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementPublishedDocumentsUrl",
+            "description": "Link to Published Documents"
+          }
+        },
+        "Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)": {
+          "defaultValue": "d5560ea3-1590-41fa-bb3a-bde125e95f27",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementTaskTrackerUrl",
+            "description": "Link to task tracker"
+          }
+        },
+        "DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)": {
+          "defaultValue": "https://mintekcoza.sharepoint.com/sites/divisionsdev/Docs",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementSiteUrl",
+            "description": "Site url for document management"
+          }
+        },
+        "Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)": {
+          "defaultValue": "051877cf-dd1b-44cb-961e-7a3da681c5cd",
+          "type": "String",
+          "metadata": {
+            "schemaName": "mintek_DocumentManagementDraftDocumentsUrl",
+            "description": "Link to Draft documents Library"
+          }
+        }
+      },
+      "triggers": {
+        "When_an_item_or_a_file_is_modified": {
+          "recurrence": {
+            "interval": 1,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "f0c7687a-8b1a-4a56-a586-621ca14c6e49"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline-2",
+              "operationId": "GetOnChangedItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')",
+              "view": "fd815c68-cba6-41d5-bec8-e7adde270c15"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "conditions": [
+            {
+              "expression": "@and(equals(triggerOutputs()?['body/Completed'], false), not(equals(triggerOutputs()?['body/Progress/Value'], 'In Progress')), not(equals(triggerOutputs()?['body/Progress/Value'], 'Cancelled')))"
+            }
+          ]
+        }
+      },
+      "actions": {
+        "Update_item_-_Task_Tracker": {
+          "runAfter": {
+            "Compose_-_Document_Owner": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "4458b22c-2c5e-416c-ab15-9a54d4dd393a"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline-2",
+              "operationId": "PatchItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management Task Tracker Url (mintek_DocumentManagementTaskTrackerUrl)')",
+              "id": "@triggerOutputs()?['body/ID']",
+              "item/Title": "@triggerOutputs()?['body/Title']",
+              "item/DueDate": "@utcNow()",
+              "item/Completed": true,
+              "item/SystemNotes": "Email sent to:\nDocument Owner: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/Email']}\nPower Automate Workflow: Docs - Task Tacker - Approval Response"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Get_file_properties_-_Document": {
+          "runAfter": {
+            "Initialize_variable_-_arrReviewersEmail": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "53c9c9f0-d6a3-40d9-b7d1-51499334cc1e"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline-2",
+              "operationId": "GetFileItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+              "id": "@triggerOutputs()?['body/DocumentID']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Compose_-_Document_Hyperlink": {
+          "runAfter": {
+            "Get_file_properties_-_Document": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "f2820f06-7670-4c0b-98a8-74e9ff12ace1"
+          },
+          "type": "Compose",
+          "inputs": "<a href=\"@{outputs('Get_file_properties_-_Document')?['body/{Link}']}\">Link to the Document</a>"
+        },
+        "Compose_-_Document_Owner": {
+          "runAfter": {
+            "Compose_-_Document_Hyperlink": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "85525751-ba05-40e4-b202-a01eafd7c9c2"
+          },
+          "type": "Compose",
+          "inputs": "Document Owner: @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/Email']}"
+        },
+        "Condition_-_Check_if_Approved": {
+          "actions": {
+            "Compose_-_Found_Published_version_of_Document": {
+              "runAfter": {
+                "Get_files_(properties_only)_-_Published_Document_with_PDF_filename": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "21e83e1e-8b1a-4c54-8428-1636d2b5f07a"
+              },
+              "type": "Compose",
+              "inputs": "@length(outputs('Get_files_(properties_only)_-_Published_Document_with_PDF_filename')?['body/value'])"
+            },
+            "Condition_-_Found_Published_version_of_Document": {
+              "actions": {
+                "Apply_to_each": {
+                  "foreach": "@outputs('Get_files_(properties_only)_-_Published_Document_with_PDF_filename')?['body/value']",
+                  "actions": {
+                    "Set_variable_-_PublishedDocID": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "c3b922f8-aae9-4abd-b6c3-af071cff9e93"
+                      },
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "PublishedDocID",
+                        "value": "@items('Apply_to_each')?['ID']"
+                      }
+                    },
+                    "Move_file": {
+                      "runAfter": {
+                        "Set_variable_-_PublishedDocID": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "9dd6ee68-d023-47e4-a059-7fb769a7671e"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_sharepointonline-2",
+                          "operationId": "MoveFileAsync",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                        },
+                        "parameters": {
+                          "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                          "parameters/sourceFileId": "@items('Apply_to_each')?['{Identifier}']",
+                          "parameters/destinationDataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                          "parameters/destinationFolderPath": "/ArchivedDocuments",
+                          "parameters/nameConflictBehavior": 2
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "3ca10981-ce54-4bc8-afe0-28d5a5204404"
+                  },
+                  "type": "Foreach"
+                }
+              },
+              "runAfter": {
+                "Apply_to_each_2": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(outputs('Get_files_(properties_only)_-_Published_Document_with_PDF_filename')?['body/value'])",
+                  1
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "392844cd-1962-476b-af21-8381960583ec"
+              },
+              "type": "If"
+            },
+            "Condition_-_Check_Process_equals_Approval_(or_Review)_-_Date": {
+              "actions": {
+                "Set_variable_-_EffectiveFromDate": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "EffectiveFromDate",
+                    "value": "@{body('Update_item_-_Task_Tracker')?['DueDate']}"
+                  }
+                },
+                "Set_variable_-_EffectiveDateTime_-_SA_time": {
+                  "runAfter": {
+                    "Set_variable_-_EffectiveFromDate": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "EffectiveDateTime",
+                    "value": "@{formatDateTime(addHours(body('Update_item_-_Task_Tracker')?['DueDate'], 2), 'yyyy/MM/dd')}"
+                  }
+                },
+                "Set_variable_-_ReviewDateTime_-_SA_time": {
+                  "runAfter": {
+                    "Set_variable_-_EffectiveDateTime_-_SA_time": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "ReviewDateTime",
+                    "value": "@{formatDateTime(addHours(body('Update_item_-_Task_Tracker')?['DueDate'], 2), 'yyyy/MM/dd HH:mm')}"
+                  }
+                }
+              },
+              "runAfter": {},
+              "else": {
+                "actions": {
+                  "Condition": {
+                    "actions": {
+                      "Set_variable_-_EffectiveFromDate_2": {
+                        "runAfter": {},
+                        "metadata": {
+                          "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                        },
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "EffectiveFromDate",
+                          "value": "@{body('Update_item_-_Task_Tracker')?['DueDate']}"
+                        }
+                      },
+                      "Set_variable_-_EffectiveDateTime_-_SA_time_2": {
+                        "runAfter": {
+                          "Set_variable_-_EffectiveFromDate_2": [
+                            "Succeeded"
+                          ]
+                        },
+                        "metadata": {
+                          "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                        },
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "EffectiveDateTime",
+                          "value": "@{formatDateTime(addHours(body('Update_item_-_Task_Tracker')?['DueDate'], 2), 'yyyy/MM/dd')}"
+                        }
+                      }
+                    },
+                    "runAfter": {},
+                    "else": {
+                      "actions": {
+                        "Set_variable_-_EffectiveFromDate_-_Review": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "EffectiveFromDate",
+                            "value": "@outputs('Get_file_properties_-_Document')?['body/effective_x0020_Fron_x0020_Date']"
+                          }
+                        },
+                        "Set_variable_-_EffectiveDateTime_-_SA_time_3": {
+                          "runAfter": {
+                            "Set_variable_-_EffectiveFromDate_-_Review": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                          },
+                          "type": "SetVariable",
+                          "inputs": {
+                            "name": "EffectiveDateTime",
+                            "value": "@{formatDateTime(body('Update_item_-_Task_Tracker')?['DueDate'], 'yyyy/MM/dd')}"
+                          }
+                        }
+                      }
+                    },
+                    "expression": {
+                      "equals": [
+                        "@empty(outputs('Get_file_properties_-_Document')?['body/effective_x0020_Fron_x0020_Date'])",
+                        "@true"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "6e10a0af-27e0-4403-8afb-7305750a6019"
+                    },
+                    "type": "If"
+                  },
+                  "Set_variable_-_ReviewDateTime_-_SA_time_2": {
+                    "runAfter": {
+                      "Condition": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "3990db46-29ec-440b-8b53-d9b66209be29"
+                    },
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "ReviewDateTime",
+                      "value": "@{formatDateTime(addHours(body('Update_item_-_Task_Tracker')?['DueDate'], 2), 'yyyy/MM/dd HH:mm')}"
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@outputs('Update_item_-_Task_Tracker')?['body/Process']",
+                  "Approval"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fcb8399c-ef8a-4644-92b9-1b291bf9c8bf"
+              },
+              "type": "If"
+            },
+            "Update_file_properties_-_Draft_Document": {
+              "runAfter": {
+                "Condition_-_Check_Process_equals_Approval_(or_Review)_-_Date": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f01c282b-88a5-4a18-bcfe-4d8ec1ac8bc3"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline-2",
+                  "operationId": "PatchFileItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                  "id": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+                  "item/Review_x0020_Date1": "@variables('ReviewDateTime')",
+                  "item/Workflow_x0020_Status": "@{variables('ApprovalOrReview')} @{triggerOutputs()?['body/Progress/Value']} by @{outputs('Update_item_-_Task_Tracker')?['body/ResponseFrom/DisplayName']} ",
+                  "item/Review_x0020_Period": "@outputs('Get_file_properties_-_Document')?['body/Review_x0020_Period']",
+                  "item/Expiry_x0020_Date1": "@variables('ReviewDateTime')",
+                  "item/Approver_x0020_Comments": "@if(empty(triggerOutputs()?['body/Notes']),'No comments',triggerOutputs()?['body/Notes'])",
+                  "item/SystemNotes": "@{if(equals(triggerOutputs()?['body/Process'], 'Approval'), 'Document Approved and Published as PDF. ', '')}\nPower Automate Workflow: Docs - Task Tacker - Approval Response",
+                  "item/EffectiveDate": "@variables('EffectiveDateTime')",
+                  "item/Last_x0020_Reviewed_x0020_Date": "@variables('ReviewDateTime')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Get_files_(properties_only)_-_Published_Document_with_PDF_filename": {
+              "runAfter": {
+                "Set_variable_-_PublishedDoc_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d0316ffa-1e97-4d07-8757-fefd11ef749f"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline-2",
+                  "operationId": "GetFileItems",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "table": "@parameters('Document Management - Published Documents Url (mintek_DocumentManagementPublishedDocumentsUrl)')",
+                  "$filter": "FileLeafRef eq '@{variables('PublishedDoc')}'",
+                  "$orderby": "ID desc",
+                  "$top": 1
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Set_variable_-_ApprovedPublishedDocLink": {
+              "runAfter": {
+                "Update_file_properties_-_Published_Document_PDF": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "219fea2b-a503-4744-b1df-187e2f0d11c9"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "ApprovedPublishedDocLink",
+                "value": "<p>\n    <span class=\"item-head\">Link to the PDF:</span> <a href=\"@{outputs('Update_file_properties_-_Published_Document_PDF')?['body/{Link}']}\">Link to the Document</a>\n</p>"
+              }
+            },
+            "Get_file_content_-_Draft_Document": {
+              "runAfter": {
+                "Update_file_properties_-_Draft_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5f317a9a-231e-4106-8a2c-a26347fff1bf",
+                "%252fDocuments%2bUnder%2bReview%252f01%2bPancake%2bTest%2b002.docx": "/Documents Under Review/01 Pancake Test 002.docx"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline-2",
+                  "operationId": "GetFileContent",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "id": "@outputs('Update_file_properties_-_Draft_Document')?['body/{Identifier}']",
+                  "inferContentType": true
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Create_file_-_Published_Document_PDF": {
+              "runAfter": {
+                "Condition_-_Found_Published_version_of_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "44b60c64-5a5d-4282-a681-a7b54ec3a553"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline-2",
+                  "operationId": "CreateFile",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "folderPath": "/PublishedDocuments",
+                  "name": "@{outputs('Update_file_properties_-_Draft_Document')?['body/{Name}']}.pdf",
+                  "body": "@body('Convert_Word_Document_to_PDF')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Set_variable_-_PublishedDocID_2": {
+              "runAfter": {
+                "Create_file_-_Published_Document_PDF": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d2640322-1608-4e88-a877-d56336262a4c"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "PublishedDocID",
+                "value": "@outputs('Create_file_-_Published_Document_PDF')?['body/ItemId']"
+              }
+            },
+            "Append_to_string_variable_-_SystemNote": {
+              "runAfter": {
+                "Set_variable_-_ApprovedPublishedDocLink": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "7e07fcb4-5c72-4324-b6ab-357cbd2db1e3"
+              },
+              "type": "AppendToStringVariable",
+              "inputs": {
+                "name": "SystemNote",
+                "value": " and Published PDF generated"
+              }
+            },
+            "Update_file_properties_-_Published_Document_PDF": {
+              "runAfter": {
+                "Set_variable_-_PublishedDocID_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f01c282b-88a5-4a18-bcfe-4d8ec1ac8bc3"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline-2",
+                  "operationId": "PatchFileItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "table": "@parameters('Document Management - Published Documents Url (mintek_DocumentManagementPublishedDocumentsUrl)')",
+                  "id": "@variables('PublishedDocID')",
+                  "item/Document_x0020_Origin": "@outputs('Update_file_properties_-_Draft_Document')?['body/Divisions/Value']",
+                  "item/Review_x0020_Period": "@outputs('Update_file_properties_-_Draft_Document')?['body/Review_x0020_Period']",
+                  "item/SOP_x0020_No_x002e_": "@outputs('Update_file_properties_-_Draft_Document')?['body/SOP_x0020_No_x002e_']",
+                  "item/Title": "@outputs('Update_file_properties_-_Draft_Document')?['body/Title']",
+                  "item/Divisions/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/Divisions/Value']",
+                  "item/Project_x0020_Title": "@outputs('Get_file_properties_-_Document')?['body/Document_x0020_Title']",
+                  "item/Document_x0020_Owner/Claims": "@outputs('Update_file_properties_-_Draft_Document')?['body/Document_x0020_Owner/Email']",
+                  "item/Approval_x0020_Start_x0020_Time": "@outputs('Update_file_properties_-_Draft_Document')?['body/Approval_x0020_Start_x0020_Time']",
+                  "item/Publish_x0020_Date": "@utcNow()",
+                  "item/Division_x0020_Name": "@outputs('Update_file_properties_-_Draft_Document')?['body/Division_x0020_Name']",
+                  "item/Reviewers": "@variables('arrReviewersEmail')",
+                  "item/Tag/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/Tag/Value']",
+                  "item/OData__ExtendedDescription": "@outputs('Update_file_properties_-_Draft_Document')?['body/OData__ExtendedDescription']",
+                  "item/Approver_x0020_Signature": "@outputs('Update_file_properties_-_Draft_Document')?['body/Approver_x0020_Signature']",
+                  "item/Task_x0020_Name": "@outputs('Update_file_properties_-_Draft_Document')?['body/Task_x0020_Name']",
+                  "item/User1": "@outputs('Update_file_properties_-_Draft_Document')?['body/User1']",
+                  "item/Designation": "@outputs('Update_file_properties_-_Draft_Document')?['body/Designation']",
+                  "item/TaskID": "@outputs('Update_file_properties_-_Draft_Document')?['body/TaskID']",
+                  "item/Approver/Claims": "@outputs('Update_file_properties_-_Draft_Document')?['body/Approver/Email']",
+                  "item/Lotus_x0020_Notes_x0020_Revision_x0020_No_x002e_": "@outputs('Update_file_properties_-_Draft_Document')?['body/Lotus_x0020_Notes_x0020_Revision_x0020_No_x002e_']",
+                  "item/Process/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/Process/Value']",
+                  "item/Activity": "@outputs('Update_file_properties_-_Draft_Document')?['body/Activity']",
+                  "item/Signature_x0020_Required": "@outputs('Update_file_properties_-_Draft_Document')?['body/Signature_x0020_Required']",
+                  "item/Expiry_x0020_Date": "@outputs('Update_file_properties_-_Draft_Document')?['body/Expiry_x0020_Date']",
+                  "item/DCR": "@outputs('Update_file_properties_-_Draft_Document')?['body/DCR']",
+                  "item/IsWasteSDS": "@outputs('Update_file_properties_-_Draft_Document')?['body/IsWasteSDS']",
+                  "item/SignedBy": "@outputs('Update_file_properties_-_Draft_Document')?['body/SignedBy']",
+                  "item/Paper_x0020_Distribution": "@outputs('Update_file_properties_-_Draft_Document')?['body/Paper_x0020_Distribution']",
+                  "item/Activity_x0020_IDs": "<p>@{outputs('Update_file_properties_-_Draft_Document')?['body/Activity_x0020_IDs0']}</p>",
+                  "item/Distribution": "@variables('arrElectronic')",
+                  "item/Signed_x0020_Copy": "@outputs('Update_file_properties_-_Draft_Document')?['body/Signed_x0020_Copy']",
+                  "item/Appproval_x0020_Completed/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/Appproval_x0020_Completed/Value']",
+                  "item/Controlled_x0020_Document": "@outputs('Update_file_properties_-_Draft_Document')?['body/Controlled_x0020_Document']",
+                  "item/Review_x0020_Date1": "@outputs('Update_file_properties_-_Draft_Document')?['body/Review_x0020_Date1']",
+                  "item/FieldName_B76CFA9F_26B8_478F_AF4/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/FieldName_B76CFA9F_26B8_478F_AF4/Value']",
+                  "item/Controlled_x0020_Label": "@outputs('Update_file_properties_-_Draft_Document')?['body/Controlled_x0020_Label']",
+                  "item/Process1": "@outputs('Update_file_properties_-_Draft_Document')?['body/Process10']",
+                  "item/Document_x0020_Revision_x0020_No_x002e_": "@outputs('Update_file_properties_-_Draft_Document')?['body/Document_x0020_Revision_x0020_No_x002e_']",
+                  "item/Process_x0020_IDs": "<p><br></p>",
+                  "item/Controlled_x0020_Copy1": "@outputs('Update_file_properties_-_Draft_Document')?['body/Controlled_x0020_Copy1']",
+                  "item/Process_x0020_Category/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/Process_x0020_Category/Value']",
+                  "item/Expiry_x0020_Date1": "@outputs('Update_file_properties_-_Draft_Document')?['body/Expiry_x0020_Date1']",
+                  "item/Status_x0020_Of_x0020_Policy/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/Status_x0020_Of_x0020_Policy/Value']",
+                  "item/Approver_x0020_Comments": "@outputs('Update_file_properties_-_Draft_Document')?['body/Approver_x0020_Comments']",
+                  "item/Board_x0020_Approved/Value": "@outputs('Update_file_properties_-_Draft_Document')?['body/Board_x0020_Approved/Value']",
+                  "item/Appointee": "@outputs('Update_file_properties_-_Draft_Document')?['body/Appointee']",
+                  "item/effective_x0020_Fron_x0020_Date": "@outputs('Update_file_properties_-_Draft_Document')?['body/effective_x0020_Fron_x0020_Date']",
+                  "item/Document_x0020_Number": "@outputs('Update_file_properties_-_Draft_Document')?['body/Document_x0020_Number']",
+                  "item/Signed_x0020_Date": "@outputs('Update_file_properties_-_Draft_Document')?['body/Signed_x0020_Date']",
+                  "item/ApproverComments": "@outputs('Update_file_properties_-_Draft_Document')?['body/Approver_x0020_Comments']",
+                  "item/Previous_x0020_Approval_x0020_Date": "@outputs('Update_file_properties_-_Draft_Document')?['body/Previous_x0020_Approval_x0020_Date']",
+                  "item/Appointee_x0020_Signature": "@outputs('Update_file_properties_-_Draft_Document')?['body/Appointee_x0020_Signature']",
+                  "item/DocStatus": "@outputs('Update_file_properties_-_Draft_Document')?['body/DocStatus']",
+                  "item/SystemNotes": "@{if(equals(triggerOutputs()?['body/Process'], 'Approval'), 'Document Approved and Published as PDF. ', '')}Revision No Updated: @{outputs('Update_file_properties_-_Draft_Document')?['body/Document_x0020_Revision_x0020_No_x002e_']}. \n@{variables('ApprovalOrReview')} @{triggerOutputs()?['body/Progress/Value']} by @{outputs('Update_item_-_Task_Tracker')?['body/ResponseFrom/DisplayName']}.\nPower Automate Workflow: Docs - Task Tacker - Approval Response",
+                  "item/EffectiveDate": "@outputs('Update_file_properties_-_Draft_Document')?['body/EffectiveDate']",
+                  "item/RevNo": "@outputs('Update_file_properties_-_Draft_Document')?['body/Document_x0020_Revision_x0020_No_x002e_']",
+                  "item/Last_x0020_Reviewed_x0020_Date": "@outputs('Update_file_properties_-_Draft_Document')?['body/Last_x0020_Review_x0020_Date']",
+                  "item/OData__Category": "@outputs('Update_file_properties_-_Draft_Document')?['body/Category']",
+                  "item/{ContentType}/Id": "@outputs('Update_file_properties_-_Draft_Document')?['body/{ContentType}/Id']"
+                },
+                "authentication": "@parameters('$authentication')",
+                "retryPolicy": {
+                  "type": "none"
+                }
+              }
+            },
+            "Convert_Word_Document_to_PDF": {
+              "runAfter": {
+                "Get_file_content_-_Draft_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "1a3183d9-2d6a-43ce-9730-9b303761a385"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_wordonlinebusiness-1",
+                  "operationId": "GetFilePDF",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_wordonlinebusiness"
+                },
+                "parameters": {
+                  "source": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+                  "drive": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+                  "file": "@outputs('Update_file_properties_-_Draft_Document')?['body/{FilenameWithExtension}']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Set_variable_-_PublishedDoc_2": {
+              "runAfter": {
+                "Convert_Word_Document_to_PDF": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "d65b9656-d66b-44d0-8d09-2956711a3a04"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "PublishedDoc",
+                "value": "@outputs('Get_file_properties_-_Document')?['body/{Name}']"
+              }
+            },
+            "Apply_to_each-Reviewers": {
+              "foreach": "@outputs('Get_file_properties_-_Document')?['body/Reviewers']",
+              "actions": {
+                "Append_to_array_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "448aef33-dacf-4719-9eb9-1b2e0c14626f"
+                  },
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "arrReviewersEmail",
+                    "value": {
+                      "Claims": "@{items('Apply_to_each-Reviewers')?['Claims']}"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Compose_-_Found_Published_version_of_Document": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "82df2845-b7b4-4bed-af0c-6a320a6aea71"
+              },
+              "type": "Foreach"
+            },
+            "Apply_to_each_2": {
+              "foreach": "@outputs('Get_file_properties_-_Document')?['body/Electronic_x0020_Distribution']",
+              "actions": {
+                "Append_to_array_variable_2": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "448aef33-dacf-4719-9eb9-1b2e0c14626f"
+                  },
+                  "type": "AppendToArrayVariable",
+                  "inputs": {
+                    "name": "arrElectronic",
+                    "value": {
+                      "Claims": "@{items('Apply_to_each_2')?['Claims']}"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Apply_to_each-Reviewers": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "82df2845-b7b4-4bed-af0c-6a320a6aea71"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Update_item_-_Task_Tracker": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/Progress/Value']",
+              "Approved"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "821853a0-a198-4e98-acb9-e56e11a2c17c"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_-_ApprovedPublishedDocLink": {
+          "runAfter": {
+            "Initialize_variable_-_SystemNote": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7058513-abda-42d1-9125-88894e14f05c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ApprovedPublishedDocLink",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_PublishedDoc": {
+          "runAfter": {
+            "Initialize_variable_-_ApprovedPublishedDocLink": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7f8044b-c274-4de5-83d0-952bb393565d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "PublishedDoc",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_PublishedDocID": {
+          "runAfter": {
+            "Initialize_variable_-_PublishedDoc": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7f8044b-c274-4de5-83d0-952bb393565d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "PublishedDocID",
+                "type": "integer"
+              }
+            ]
+          }
+        },
+        "Compose_-_Trigger": {
+          "runAfter": {
+            "Compose_2": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "aba95fc7-60a3-4fc4-9304-cffb1d3b497f"
+          },
+          "type": "Compose",
+          "inputs": "Completed: @{triggerOutputs()?['body/Completed']}\nProgress: @{triggerOutputs()?['body/Progress/Value']}\nNot Completed: @{equals(triggerOutputs()?['body/Completed'],false)}\nNot \"In Progress\": @{not(equals(triggerOutputs()?['body/Progress/Value'],'In Progress'))}\nNot \"Cancelled\": @{not(equals(triggerOutputs()?['body/Progress/Value'],'Cancelled'))}\nTrigger Condition: @{and(equals(triggerOutputs()?['body/Completed'], false), not(equals(triggerOutputs()?['body/Progress/Value'], 'In Progress')), not(equals(triggerOutputs()?['body/Progress/Value'], 'Cancelled')))}"
+        },
+        "Initialize_variable_-_arrReviewers": {
+          "runAfter": {
+            "Initialize_variable_-_PublishedDocID": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "89a5bc00-64ff-46f9-810e-01350ac56db9"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arrReviewers",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_ApproveDate": {
+          "runAfter": {
+            "Compose_-_Filename": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "04d196e0-f5de-4f50-82e2-299bd8e3d892"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ApproveDate",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_EffectiveFromDate": {
+          "runAfter": {
+            "Initialize_variable_-_ApproveDate": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "03c717cd-db3b-4200-a0bb-226c062a79b5"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "EffectiveFromDate",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_ApprovalOrReview": {
+          "runAfter": {
+            "Initialize_variable_-_ReviewDateTime": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "924efad2-3a66-419f-bbcb-8bedd236ad40"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ApprovalOrReview",
+                "type": "string",
+                "value": "Approval"
+              }
+            ]
+          }
+        },
+        "Condition_-_Check_Process_equals_Approval_(or_Review)": {
+          "actions": {
+            "Set_variable_-_ApprovalOrReview_4": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "2cdb791c-2273-41f6-bf65-08bf28973a10"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "ApprovalOrReview",
+                "value": "Approval"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_-_ApprovalOrReview": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Set_variable_-_ApprovalOrReview_3": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "58b6df39-8539-48cd-83ac-90e3b50baa8b"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "ApprovalOrReview",
+                  "value": "Review Request"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/Process']",
+              "Approval"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fcb8399c-ef8a-4644-92b9-1b291bf9c8bf"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_-_SystemNote": {
+          "runAfter": {
+            "Condition_-_Check_Process_equals_Approval_(or_Review)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "89cca69c-50c5-4a67-9e89-0065284509e9"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SystemNote",
+                "type": "string",
+                "value": "@{variables('ApprovalOrReview')}: @{triggerOutputs()?['body/Progress/Value']} by @{triggerOutputs()?['body/ResponseFrom/DisplayName']} "
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_arrElectronic": {
+          "runAfter": {
+            "Initialize_variable_-_arrReviewers": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "89a5bc00-64ff-46f9-810e-01350ac56db9"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arrElectronic",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Compose_-_Filename": {
+          "runAfter": {
+            "Compose_-_Trigger": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "671657cc-0775-41db-a4af-4d5fe1626813"
+          },
+          "type": "Compose",
+          "inputs": "@triggerOutputs()?['body/{FilenameWithExtension}']"
+        },
+        "Update_file_properties_-_Draft_Document_-_Update_Status": {
+          "runAfter": {
+            "Condition_-_Check_if_Approved": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "99267b28-d691-4493-b4a4-ca3459c64359"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline-2",
+              "operationId": "PatchFileItem",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "@parameters('DocumentManagementSiteUrl (mintek_DocumentManagementSiteUrl)')",
+              "table": "@parameters('Document Management - Draft Documents Url (mintek_DocumentManagementDraftDocumentsUrl)')",
+              "id": "@outputs('Get_file_properties_-_Document')?['body/ID']",
+              "item/Document_x0020_Title": "@outputs('Get_file_properties_-_Document')?['body/Document_x0020_Title']",
+              "item/Workflow_x0020_Status": "@variables('SystemNote')",
+              "item/Review_x0020_Period": "@outputs('Get_file_properties_-_Document')?['body/Review_x0020_Period']",
+              "item/Expiry_x0020_Date1": "@outputs('Update_file_properties_-_Draft_Document')?['body/Last_x0020_Review_x0020_Date']"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Initialize_variable_-_ElectronicDistribution": {
+          "runAfter": {
+            "Update_file_properties_-_Draft_Document_-_Update_Status": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "ba0a7618-0a0f-4ea6-b114-50ac2743a81a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ElectronicDistribution",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Condition_-_Check_if_Approved_2": {
+          "actions": {
+            "Send_an_email_(V2)_-_Inform_Document_Owner_2": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "72408ac4-40c0-4e20-a359-6181e6138928"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "@{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/Email']}; @{outputs('Update_file_properties_-_Draft_Document_-_Update_Status')?['body/Approver/Email']}; @{variables('ElectronicDistribution')}",
+                  "emailMessage/Subject": "Document Notification: @{variables('ApprovalOrReview')} of @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_NO']}",
+                  "emailMessage/Body": "<p>This is just to notify you that the @{outputs('Update_file_properties_-_Draft_Document_-_Update_Status')?['body/Document_x0020_Number']} has been published.</p>\n@{variables('ApprovedPublishedDocLink')}",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Send_an_email_(V2)_-_Inform_Document_Owner_-_Rejected": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "72408ac4-40c0-4e20-a359-6181e6138928"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "@{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Owner/Email']};",
+                    "emailMessage/Subject": "@{triggerOutputs()?['body/Progress/Value']}: Document @{variables('ApprovalOrReview')} of @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_NO']}",
+                    "emailMessage/Body": "<style>\n    .status-box {\n        padding: 4px 8px;\n        border-radius: 16px;\n        display: inline-block;\n        color: white;\n        text-align: center;\n        background-color: @{if(equals(triggerOutputs()?['body/Progress/Value'], 'Rejected'), 'darkred', 'green')}; /* Conditional for color */\n    }\n    .item-head {\n        color: rgb(97, 97, 97);\n        font-weight: 600;\n    }\n</style>\n<p>\n    This is a notification to inform you that a document @{toLower(variables('ApprovalOrReview'))} has been @{triggerOutputs()?['body/Progress/Value']}. @{if(equals(triggerOutputs()?['body/Progress/Value'], 'Rejected'), 'Please review the document at your earliest convenience to ensure that any necessary updates or actions are completed.', '')\n}\n</p>\n<p>\n    <span class=\"item-head\">Document No:</span> @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_NO']}\n<br/>\n    <span class=\"item-head\">Document Title:</span> @{outputs('Get_file_properties_-_Document')?['body/Document_x0020_Title']}\n</p>\n<p>\n    <span class=\"item-head\">Response by:</span> @{outputs('Update_item_-_Task_Tracker')?['body/ResponseFrom/DisplayName']} \n<br/>\n    <span class=\"item-head\">@{variables('ApprovalOrReview')}:</span> @{triggerOutputs()?['body/Progress/Value']}<br/>\n    <span class=\"item-head\">Comment:</span> @{if(empty(triggerOutputs()?['body/Notes']),'No comments',triggerOutputs()?['body/Notes'])}\n</p>\n<p>\n    <span class=\"item-head\">Draft Document Link:</span> @{outputs('Compose_-_Document_Hyperlink')}\n</p>\n@{variables('ApprovedPublishedDocLink')}\n<br/>\n<p style=\"font-size: 12px;\">\n    Power Automate Workflow: Docs - Task Tracker - Approval Response\n</p>\n<br/>",
+                    "emailMessage/Importance": "Normal"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@triggerOutputs()?['body/Progress/Value']",
+                  "Approved"
+                ]
+              },
+              {
+                "equals": [
+                  "@variables('ApprovalOrReview')",
+                  "Approval"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a7464ba3-2aa3-4265-b06e-da435c4cd829"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_-_ReviewDateTime": {
+          "runAfter": {
+            "Initialize_variable_-_EffectiveDateTime": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "03c717cd-db3b-4200-a0bb-226c062a79b5"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ReviewDateTime",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_-_EffectiveDateTime": {
+          "runAfter": {
+            "Initialize_variable_-_EffectiveFromDate": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "03c717cd-db3b-4200-a0bb-226c062a79b5"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "EffectiveDateTime",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Compose": {
+          "runAfter": {
+            "Set_variable_-_ElectronicDistribution": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "e2bf27ec-a138-48c8-a7d4-9a586a8cca02"
+          },
+          "type": "Compose",
+          "inputs": "@{triggerOutputs()?['body/Progress/Value']}\n@{variables('ApprovalOrReview')}"
+        },
+        "Set_variable_-_ElectronicDistribution": {
+          "runAfter": {
+            "Initialize_variable_-_ElectronicDistribution": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "df511031-6987-48e4-a241-287323a59c73"
+          },
+          "type": "SetVariable",
+          "inputs": {
+            "name": "ElectronicDistribution",
+            "value": "@outputs('Get_file_properties_-_Document')?['body/Electronic_x0020_Distribution/Email']"
+          }
+        },
+        "Compose_2": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "7ba26a1e-4c5e-4125-96d8-064b12015337"
+          },
+          "type": "Compose",
+          "inputs": "@triggerOutputs()?['body/DocumentID']"
+        },
+        "Initialize_variable_-_arrReviewersEmail": {
+          "runAfter": {
+            "Initialize_variable_-_arrElectronic": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b7f8044b-c274-4de5-83d0-952bb393565d"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "arrReviewersEmail",
+                "type": "array"
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

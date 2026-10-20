@@ -1,0 +1,19 @@
+<environmentvariabledefinition schemaname="mintek_DocumentManagementTaskTrackerUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>d5560ea3-1590-41fa-bb3a-bde125e95f27</defaultvalue>
+  <description default="Link to task tracker">
+    <label description="Link to task tracker" languagecode="1033" />
+  </description>
+  <displayname default="Document Management Task Tracker Url">
+    <label description="Document Management Task Tracker Url" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>mintek_DocumentManagementSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

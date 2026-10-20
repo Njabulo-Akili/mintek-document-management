@@ -1,0 +1,19 @@
+<environmentvariabledefinition schemaname="new_DraftDocumentsUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>ac578896-e2c9-4acb-98b9-6664e8165e52</defaultvalue>
+  <description default="Applies to SharePoint actions using table Draft Documents in RPT-TaskTracker-ResponsewhenCompleted and upload/approval flows">
+    <label description="Applies to SharePoint actions using table Draft Documents in RPT-TaskTracker-ResponsewhenCompleted and upload/approval flows" languagecode="1033" />
+  </description>
+  <displayname default="DraftDocumentsUrl">
+    <label description="DraftDocumentsUrl" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.1</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>new_ReportsSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>

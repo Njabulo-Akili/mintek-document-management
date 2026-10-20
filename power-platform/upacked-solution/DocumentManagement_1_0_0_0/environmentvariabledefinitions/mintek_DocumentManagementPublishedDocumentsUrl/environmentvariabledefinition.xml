@@ -1,0 +1,19 @@
+<environmentvariabledefinition schemaname="mintek_DocumentManagementPublishedDocumentsUrl">
+  <apiid>/providers/microsoft.powerapps/apis/shared_sharepointonline</apiid>
+  <defaultvalue>59389234-7198-4342-94fa-5c6efb12a5fc</defaultvalue>
+  <description default="Link to Published Documents">
+    <label description="Link to Published Documents" languagecode="1033" />
+  </description>
+  <displayname default="Document Management - Published Documents Url">
+    <label description="Document Management - Published Documents Url" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>0</isrequired>
+  <parameterkey>table</parameterkey>
+  <parentdefinitionid>
+    <schemaname>mintek_DocumentManagementSiteUrl</schemaname>
+  </parentdefinitionid>
+  <secretstore>0</secretstore>
+  <type>100000004</type>
+</environmentvariabledefinition>
